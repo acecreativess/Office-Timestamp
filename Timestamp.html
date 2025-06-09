@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Logger with Timestamp</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9fafc;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #222;
+    }
+
+    h2 {
+      color: #1a1a1a;
+      margin-bottom: 20px;
+    }
+
+    form {
+      background: #ffffff;
+      padding: 25px 30px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s;
+    }
+
+    form:hover {
+      transform: translateY(-3px);
+    }
+
+    label {
+      margin-top: 15px;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      margin-top: 5px;
+      padding: 10px;
+      font-size: 14px;
+      border: 1.8px solid #ddd;
+      border-radius: 6px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #007BFF;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 80px;
+    }
+
+    button {
+      margin-top: 25px;
+      padding: 12px;
+      font-weight: 700;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+      transform: scale(1.02);
+    }
+
+    #entries {
+      margin-top: 40px;
+      width: 800px;
+      max-width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background: #fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid #f0f0f0;
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+
+    .download-btn {
+      margin-top: 20px;
+      background-color: #2e7d32;
+    }
+
+    .download-btn:hover {
+      background-color: #1b5e20;
+    }
+
+    .timestamp-card {
+      display: inline-block;
+      background-color: #eef4ff;
+      color: #1a1a1a;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      box-shadow: inset 0 0 2px rgba(0,0,0,0.1);
+      transition: all 0.3s ease-in-out;
+    }
+
+    .timestamp-card:hover {
+      background-color: #dde9ff;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Task Logger with Timestamp</h2>
+
+<form id="taskForm">
+  <label>Name</label>
+  <input type="text" id="name" required />
+
+  <label>Assigned Task</label>
+  <input type="text" id="task" required />
+
+  <label>Task Description</label>
+  <textarea id="description" required></textarea>
+
+  <label>Duration</label>
+  <input type="text" id="duration" placeholder="e.g. 2 hours" required />
+
+  <label>Status</label>
+  <select id="status" required>
+    <option value="">-- Select Status --</option>
+    <option value="Pending">Pending</option>
+    <option value="In Progress">In Progress</option>
+    <option value="Completed">Completed</option>
+  </select>
+
+  
+
+  <button type="submit">Submit Task</button>
+</form>
+
+<div id="entries"></div>
+<button class="download-btn" style="display:none;">Download CSV</button>
+
+<script>
+  const form = document.getElementById('taskForm');
+  const entriesDiv = document.getElementById('entries');
+  const downloadBtn = document.querySelector('.download-btn');
+  let entries = [];
+
+  // Load from localStorage
+  window.onload = () => {
+    const saved = localStorage.getItem('taskEntries');
+    if (saved) {
+      entries = JSON.parse(saved);
+      renderEntries();
+    }
+  };
+
+  function formatDateTime(dt) {
+    return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString();
+  }
+
+  function formatDate(dt) {
+    return dt.toLocaleDateString();
+  }
+
+  function renderEntries() {
+    if (entries.length === 0) {
+      entriesDiv.innerHTML = "<p>No tasks logged yet.</p>";
+      downloadBtn.style.display = 'none';
+      return;
+    }
+
+    let html = `<table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Assigned Task</th>
+          <th>Task Description</th>
+          <th>Status</th>
+          <th>Duration</th>
+        </tr>
+      </thead><tbody>`;
+
+    entries.forEach(e => {
+      html += `<tr>
+        <td><span class="timestamp-card">${e.timestamp}</span></td>
+        <td>${e.date}</td>
+        <td>${e.name}</td>
+        <td>${e.task}</td>
+        <td>${e.description}</td>
+        <td>${e.status}</td>
+        <td>${e.duration}</td>
+      </tr>`;
+    });
+
+    html += "</tbody></table>";
+    entriesDiv.innerHTML = html;
+    downloadBtn.style.display = 'inline-block';
+  }
+
+  function convertToCSV(arr) {
+    const header = ["Timestamp", "Date", "Name", "Assigned Task", "Task Description", "Status", "Duration"];
+    const rows = arr.map(e => [
+      `"${e.timestamp}"`,
+      `"${e.date}"`,
+      `"${e.name}"`,
+      `"${e.task}"`,
+      `"${e.description.replace(/"/g, '""')}"`,
+      `"${e.status}"`,
+      `"${e.duration}"`
+    ].join(","));
+    return [header.join(","), ...rows].join("\n");
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const name = form.name.value.trim();
+    const task = form.task.value.trim();
+    const description = form.description.value.trim();
+    const status = form.status.value;
+    const duration = form.duration.value.trim();
+
+    if (!name || !task || !description || !status || !duration) {
+      alert('Please fill all fields.');
+      return;
+    }
+
+    const now = new Date();
+    const timestamp = formatDateTime(now);
+    const date = formatDate(now);
+
+    const entry = { timestamp, date, name, task, description, status, duration };
+    entries.push(entry);
+    localStorage.setItem('taskEntries', JSON.stringify(entries));
+
+    renderEntries();
+    form.reset();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csv = convertToCSV(entries);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tasks_log.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
+
+</body>
+</html>
